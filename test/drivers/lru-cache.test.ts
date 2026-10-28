@@ -5,6 +5,22 @@ import { testDriver } from "./utils.ts";
 describe("drivers: lru-cache", () => {
   testDriver({
     driver: driver({}),
+    additionalTests(ctx) {
+      it("expires items with ttl", async () => {
+        await ctx.storage.setItem("ttl:a", "value", { ttl: 1 });
+        await new Promise((resolve) => setTimeout(resolve, 1100));
+        expect(await ctx.storage.getItem("ttl:a")).toBe(null);
+      });
+
+      it("clears only the given base", async () => {
+        const lru = driver({});
+        lru.setItem!("users:1", "a", {});
+        lru.setItem!("users:2", "b", {});
+        lru.setItem!("posts:1", "c", {});
+        await lru.clear!("users:", {});
+        expect(await lru.getKeys("", {})).toMatchObject(["posts:1"]);
+      });
+    },
   });
 });
 

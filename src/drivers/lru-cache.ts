@@ -35,8 +35,8 @@ export default defineDriver((opts: LRUDriverOptions = {}) => {
     getItemRaw(key) {
       return cache.get(key) ?? null;
     },
-    setItem(key, value) {
-      cache.set(key, value);
+    setItem(key, value, tOptions) {
+      cache.set(key, value, { ttl: tOptions?.ttl });
     },
     setItemRaw(key, value) {
       cache.set(key, value);
@@ -44,11 +44,22 @@ export default defineDriver((opts: LRUDriverOptions = {}) => {
     removeItem(key) {
       cache.delete(key);
     },
+    getMeta(key) {
+      return { ttl: Math.ceil(cache.getRemainingTTL(key) / 1000) };
+    },
     getKeys() {
       return [...cache.keys()];
     },
-    clear() {
-      cache.clear();
+    clear(base) {
+      if (!base) {
+        cache.clear();
+        return;
+      }
+      for (const key of cache.keys()) {
+        if (key.startsWith(base)) {
+          cache.delete(key);
+        }
+      }
     },
     dispose() {
       cache.clear();
